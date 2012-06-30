@@ -87,6 +87,7 @@
 #define AID_NET_BW_STATS  3006  /* read bandwidth statistics */
 #define AID_NET_BW_ACCT   3007  /* change bandwidth statistics accounting */
 #define AID_NET_BT_STACK  3008  /* bluetooth: access config files */
+#define AID_QCOM_DIAG     3009  /* can read/write /dev/diag */
 
 #define AID_MISC          9998  /* access to misc storage */
 #define AID_NOBODY        9999
@@ -146,6 +147,7 @@ static const struct android_id_info android_ids[] = {
     { "net_raw",   AID_NET_RAW, },
     { "net_admin", AID_NET_ADMIN, },
     { "net_bw_stats", AID_NET_BW_STATS, },
+    { "qcom_diag", AID_QCOM_DIAG, },
     { "net_bw_acct", AID_NET_BW_ACCT, },
     { "loop_radio", AID_LOOP_RADIO, },
     { "misc",      AID_MISC, },
