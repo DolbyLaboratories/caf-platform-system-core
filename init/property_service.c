@@ -12,6 +12,29 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * @@DOLBY_BANNER
+ *
+ * This file was modified by Dolby Laboratories, Inc. The portions of the
+ * code that are surrounded by "DOLBY..." are copyrighted and
+ * licensed separately, as follows:
+ *
+ *  (C) 2011-2012 Dolby Laboratories, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @@DOLBY_FILE_M
+ * @@DOLBY_FILE_R
+ * @@DOLBY_BANNER_END
  */
 
 #include <stdio.h>
@@ -94,6 +117,13 @@ struct {
     { "persist.security.", AID_SYSTEM,   0 },
     { "persist.service.bdroid.", AID_BLUETOOTH,   0 },
     { "selinux."         , AID_SYSTEM,   0 },
+#ifdef DOLBY_UDC_MULTICHANNEL
+    { "dolby.audio",      AID_MEDIA,    0 },
+#endif // DOLBY_UDC_MULTICHANNEL
+#ifdef DOLBY_DAP
+    // used for setting Dolby specific properties
+    { "dolby.", AID_SYSTEM,   0 },
+#endif // DOLBY_DAP
     { NULL, 0, 0 }
 };
 
