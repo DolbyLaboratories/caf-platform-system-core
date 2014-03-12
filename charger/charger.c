@@ -40,6 +40,7 @@
 #include <cutils/list.h>
 #include <cutils/misc.h>
 #include <cutils/uevent.h>
+#include <getopt.h>
 
 #ifdef CHARGER_ENABLE_SUSPEND
 #include <suspend/autosuspend.h>
@@ -66,7 +67,7 @@
 
 #define BATTERY_UNKNOWN_TIME    (2 * MSEC_PER_SEC)
 #define POWER_ON_KEY_TIME       (2 * MSEC_PER_SEC)
-#define UNPLUGGED_SHUTDOWN_TIME (10 * MSEC_PER_SEC)
+#define UNPLUGGED_SHUTDOWN_TIME (2 * MSEC_PER_SEC)
 
 #define BATTERY_FULL_THRESH     95
 
@@ -78,6 +79,18 @@
 #define LOGE(x...) do { KLOG_ERROR("charger", x); } while (0)
 #define LOGI(x...) do { KLOG_INFO("charger", x); } while (0)
 #define LOGV(x...) do { KLOG_DEBUG("charger", x); } while (0)
+
+static const struct option OPTIONS[] = {
+    { "mode", required_argument, NULL, 'm' },
+    { NULL, 0, NULL, 0 },
+};
+
+enum MODE {
+    NORMAL = 0,
+    QUICKBOOT,
+};
+
+int mode = NORMAL;
 
 struct key_state {
     bool pending;
@@ -667,6 +680,20 @@ static void android_green(void)
     gr_color(0xa4, 0xc6, 0x39, 255);
 }
 
+static void draw_capacity(struct charger *charger)
+{
+    char cap_str[64];
+    int x, y;
+    int str_len_px;
+
+    snprintf(cap_str, sizeof(cap_str), "%d%%", charger->batt_anim->capacity);
+    str_len_px = gr_measure(cap_str);
+    x = (gr_fb_width() - str_len_px) / 2;
+    y = (gr_fb_height() + char_height) / 2;
+    android_green();
+    gr_text(x, y, cap_str, 0);
+}
+
 /* returns the last y-offset of where the surface ends */
 static int draw_surface_centered(struct charger *charger, gr_surface surface)
 {
@@ -719,8 +746,10 @@ static void redraw_screen(struct charger *charger)
     /* try to display *something* */
     if (batt_anim->capacity < 0 || batt_anim->num_frames == 0)
         draw_unknown(charger);
-    else
+    else {
         draw_battery(charger);
+        draw_capacity(charger);
+    }
     gr_flip();
 }
 
@@ -879,6 +908,7 @@ static void set_next_key_check(struct charger *charger,
 
 static void process_key(struct charger *charger, int code, int64_t now)
 {
+    struct animation *batt_anim = charger->batt_anim;
     struct key_state *key = &charger->keys[code];
     int64_t next_key_check;
 
@@ -897,8 +927,17 @@ static void process_key(struct charger *charger, int code, int64_t now)
         } else {
             /* if the power key got released, force screen state cycle */
             if (key->pending) {
-                request_suspend(false);
-                kick_animation(charger->batt_anim);
+                if (!batt_anim->run) {
+                    request_suspend(false);
+                    kick_animation(charger->batt_anim);
+                } else {
+                    reset_animation(batt_anim);
+                    charger->next_screen_transition = -1;
+                    set_backlight(false);
+                    gr_fb_blank(true);
+                    if (charger->num_supplies_online > 0)
+                        request_suspend(true);
+                }
             }
         }
     }
@@ -919,6 +958,15 @@ static void handle_power_supply_state(struct charger *charger, int64_t now)
     if (charger->num_supplies_online == 0) {
         request_suspend(false);
         if (charger->next_pwr_check == -1) {
+            if (mode == QUICKBOOT) {
+                set_backlight(false);
+                gr_fb_blank(true);
+                request_suspend(true);
+                /* exit here. There is no need to keep running when charger
+                 * unplugged under QuickBoot mode
+                 */
+                exit(0);
+            }
             charger->next_pwr_check = now + UNPLUGGED_SHUTDOWN_TIME;
             LOGI("[%lld] device unplugged: shutting down in %lld (@ %lld)\n",
                  now, UNPLUGGED_SHUTDOWN_TIME, charger->next_pwr_check);
@@ -1176,7 +1224,23 @@ int main(int argc, char **argv)
 
     dump_last_kmsg();
 
-    alarm_thread_create();
+    int arg;
+    while ((arg=getopt_long(argc, argv,"m:" , OPTIONS, NULL))!=-1) {
+        switch (arg) {
+            case 'm':
+                mode = atoi(optarg);
+                break;
+            case '?':
+                LOGI("invalid argument\n");
+                continue;
+            default:
+                LOGI("nothing to do\n");
+                continue;
+        }
+    }
+
+    if (mode != QUICKBOOT)
+        alarm_thread_create();
 
     LOGI("--------------- STARTING CHARGER MODE ---------------\n");
 
