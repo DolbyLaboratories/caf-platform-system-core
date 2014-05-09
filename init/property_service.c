@@ -114,14 +114,13 @@ struct {
     { "persist.security.", AID_SYSTEM,   0 },
     { "persist.service.bdroid.", AID_BLUETOOTH,   0 },
     { "selinux."         , AID_SYSTEM,   0 },
-    { "wc_transport.",     AID_BLUETOOTH,   AID_SYSTEM },
 #ifdef DOLBY_UDC
     { "dolby.audio",      AID_MEDIA,    0 },
-#endif // DOLBY_END
+#endif // DOLBY_UDC
 #ifdef DOLBY_DAP
     // used for setting Dolby specific properties
     { "dolby.", AID_SYSTEM,   0 },
-#endif // DOLBY_END
+#endif // DOLBY_DAP
     { NULL, 0, 0 }
 };
 
