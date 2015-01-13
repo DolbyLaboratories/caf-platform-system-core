@@ -262,8 +262,7 @@ bool BatteryMonitor::update(void) {
             case ANDROID_POWER_SUPPLY_TYPE_BATTERY:
                 break;
             default:
-                KLOG_WARNING(LOG_TAG, "%s: Unknown power supply type\n",
-                                 name);
+                break;
             } //switch
         } //while
         closedir(dir);
