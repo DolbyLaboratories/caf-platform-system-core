@@ -370,7 +370,7 @@ int fs_mgr_mount_all(struct fstab *fstab)
             wait_for_file(fstab->recs[i].blk_device, WAIT_TIMEOUT);
         }
 
-        if ((fstab->recs[i].fs_mgr_flags & MF_VERIFY) && device_is_secure()) {
+        if ((fstab->recs[i].fs_mgr_flags & MF_VERIFY) && device_is_secure() && !device_is_debuggable()) {
             int rc = fs_mgr_setup_verity(&fstab->recs[i]);
             if (device_is_debuggable() && rc == FS_MGR_SETUP_VERITY_DISABLED) {
                 INFO("Verity disabled");
@@ -379,6 +379,10 @@ int fs_mgr_mount_all(struct fstab *fstab)
                 continue;
             }
         }
+        if ((fstab->recs[i].fs_mgr_flags & MF_VERIFY) && device_is_debuggable() ) {
+          INFO("Device is debuggable: Verity disabled");
+        }
+
         int last_idx_inspected;
         mret = mount_with_alternatives(fstab, i, &last_idx_inspected, &attempted_idx);
         i = last_idx_inspected;
@@ -491,7 +495,7 @@ int fs_mgr_do_mount(struct fstab *fstab, char *n_name, char *n_blk_device,
                      fstab->recs[i].mount_point);
         }
 
-        if ((fstab->recs[i].fs_mgr_flags & MF_VERIFY) && device_is_secure()) {
+        if ((fstab->recs[i].fs_mgr_flags & MF_VERIFY) && device_is_secure() && !device_is_debuggable()) {
             int rc = fs_mgr_setup_verity(&fstab->recs[i]);
             if (device_is_debuggable() && rc == FS_MGR_SETUP_VERITY_DISABLED) {
                 INFO("Verity disabled");
@@ -499,6 +503,9 @@ int fs_mgr_do_mount(struct fstab *fstab, char *n_name, char *n_blk_device,
                 ERROR("Could not set up verified partition, skipping!\n");
                 continue;
             }
+        }
+        if ((fstab->recs[i].fs_mgr_flags & MF_VERIFY) && device_is_debuggable() ) {
+          INFO("Device is debuggable: Verity disabled");
         }
 
         /* Now mount it where requested */
