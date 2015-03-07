@@ -197,6 +197,7 @@ struct soc_led_color_mapping {
     int color;
 };
 
+/* Increasing battery charge percentage vs LED color mapping */
 struct soc_led_color_mapping soc_leds[3] = {
     {15, RED_LED},
     {90, RED_LED | GREEN_LED},
@@ -240,18 +241,24 @@ cleanup:
 static int set_battery_soc_leds(int soc)
 {
     int i, color;
-    static int old_color = 0;
+    static int old_color = -1;
+    int range_max = ARRAY_SIZE(soc_leds) - 1;
 
-    for (i = 0; i < (int)ARRAY_SIZE(soc_leds); i++) {
-        if (soc < soc_leds[i].soc)
+    if (range_max < 0)
+        return 0;
+
+    color = soc_leds[range_max].color;
+    for (i = 0; i <= range_max ; i++) {
+        if (soc < soc_leds[i].soc) {
+            color = soc_leds[i].color;
             break;
+        }
     }
-    color = soc_leds[i].color;
     if (old_color != color) {
-        set_tricolor_led(0, old_color);
+        if (old_color >= 0)
+            set_tricolor_led(0, old_color);
         set_tricolor_led(1, color);
         old_color = color;
-        LOGV("soc = %d, set led color 0x%x\n", soc, soc_leds[i].color);
     }
 
     return 0;
